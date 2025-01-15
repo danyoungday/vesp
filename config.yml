@@ -1,0 +1,36 @@
+# Evolution params
+evolution_params:
+  n_generations: 100
+  population_size: 100
+  remove_population_pct: 0.8
+  n_elites: 0
+  mutation_rate: 0.8
+  mutation_factor: 0.1
+  save_path: results/testmore
+  seed_dir: null
+
+# Prescriptor-specific params
+prescriptor_params:
+  model_params:
+    in_size: 3872
+    hidden_sizes: [128, 64]
+    out_size: 2
+  device: cuda:0
+
+# Evaluation params
+eval_params:
+  device: cuda:0
+  conv_params:
+    conv_blocks:
+      - in_channels: 1
+        out_channels: 16
+        kernel_size: 3
+      - in_channels: 16
+        out_channels: 32
+        kernel_size: 3
+    # These params are just dummy until we modify them later
+    hidden_sizes: [3872, 128, 64]
+    out_size: 2
+  decoder_params:
+    hidden_sizes: [3873, 128, 64]
+    out_size: 2
