@@ -1,57 +1,35 @@
+"""
+Predictor class for MNIST classification problem and training/validation functions.
+"""
 import torch
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
-    
 
-class CNNEncoder(torch.nn.Module):
-    def __init__(self, model_params: dict):
-        super().__init__()
-        conv_blocks = model_params["conv_blocks"]
-        conv_layers = []
-        for i, conv in enumerate(conv_blocks):
-            conv_layers.append(torch.nn.Conv2d(**conv))
-            if i < len(conv_blocks) - 1:
-                conv_layers.append(torch.nn.ReLU())
-                conv_layers.append(torch.nn.MaxPool2d(kernel_size=2, stride=2))
-                conv_layers.append(torch.nn.BatchNorm2d(num_features=conv["out_channels"]))
-
-        conv_layers.append(torch.nn.Flatten())
-        self.encoder = torch.nn.Sequential(*conv_layers)
-
-    def forward(self, x):
-        return self.encoder(x)
+from models import CNNEncoder, FCN
 
 
 class MNISTPredictor(torch.nn.Module):
+    """
+    Predictor for the MNIST even/odd classification problem. Encodes the context with a CNN encoder, then concatenates
+    it with the actions and decodes it with a fully connected network.
+    """
     def __init__(self, cnn_params: dict, decoder_params: dict):
         super().__init__()
         self.encoder = CNNEncoder(cnn_params)
-        
-        layers = []
-        hidden_sizes = decoder_params["hidden_sizes"]
-        for i in range(len(hidden_sizes)-1):
-            layers.append(torch.nn.Linear(hidden_sizes[i], hidden_sizes[i+1]))
-            layers.append(torch.nn.ReLU())
-        layers.append(torch.nn.Linear(hidden_sizes[-1], 1))
-        layers.append(torch.nn.Sigmoid())
-
-        self.decoder = torch.nn.Sequential(*layers)
-
-        print(self.encoder)
-        print(self.decoder)
+        self.decoder = FCN(decoder_params)
 
     def encode(self, context):
         """
         Encodes the context with our CNN
         """
-        return self.encoder(context.unsqueeze(1))
+        return torch.flatten(self.encoder(context.unsqueeze(1)), start_dim=1)
 
     def decode(self, encoded_context, actions):
         """
         Decodes the encoded context and actions into outcomes
         """
         concatenated = torch.cat([encoded_context, actions.unsqueeze(1)], dim=1)
-        return self.decoder(concatenated)
+        return torch.sigmoid(self.decoder(concatenated))
 
     def forward(self, context, actions):
         """
@@ -62,6 +40,10 @@ class MNISTPredictor(torch.nn.Module):
 
 
 def validate(predictor: torch.nn.Module, dataset: Dataset, device: str = "cuda:0"):
+    """
+    A validation function for model training just to track how well it's doing. This is kinda cheating because
+    we're validating with the test set but we're not really doing any hyperparameter tuning so it's ok.
+    """
     dataloader = DataLoader(dataset, batch_size=1024, shuffle=False)
     predictor.to(device)
     predictor.eval()
@@ -79,6 +61,9 @@ def train_model(predictor: torch.nn.Module,
                 epochs: int,
                 batch_size: int,
                 device: str = "cuda:0"):
+    """
+    Trains the MNIST predictor model on our synthetic MNIST dataset. A simple binary classification problem.
+    """
     optimizer = torch.optim.AdamW(predictor.parameters())
     loss_fn = torch.nn.BCELoss()
 
@@ -97,7 +82,7 @@ def train_model(predictor: torch.nn.Module,
                 total_loss += loss.item() * len(context)
                 loss.backward()
                 optimizer.step()
-            
+
             acc = validate(predictor, val_ds)
 
             pbar.set_postfix({"loss": total_loss / len(train_ds), "acc": acc})

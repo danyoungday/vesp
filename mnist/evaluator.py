@@ -1,15 +1,19 @@
+"""
+Evaluator implementation for MNIST problem.
+"""
 from presp.evaluator import Evaluator
 import torch
 from torch.utils.data import DataLoader, Subset
 
-from dataset import MNISTDataset
-from predictor import MNISTPredictor, train_model
-from prescriptor import DeepNNPrescriptor
+from mnist.dataset import MNISTDataset
+from mnist.predictor import MNISTPredictor, train_model
+from mnist.prescriptor import DeepNNPrescriptor
 
 
 class MNISTEvaluator(Evaluator):
     """
-    TODO: To speed things up we should only encode the dataset once.
+    Evaluator for MNIST problem. We hard-code which subsets of the dataset to use for training/evaluation for
+    reproducibility.
     """
     def __init__(self, predictor_params: dict, batch_size: int, device: str = "cpu"):
         super().__init__(["acc"])
@@ -23,7 +27,12 @@ class MNISTEvaluator(Evaluator):
 
         torch.manual_seed(42)
         self.predictor = MNISTPredictor(predictor_params["conv_params"], predictor_params["decoder_params"])
-        train_model(self.predictor, train_ds, test_ds, predictor_params["epochs"], predictor_params["batch_size"], device)
+        train_model(self.predictor,
+                    train_ds,
+                    test_ds,
+                    predictor_params["epochs"],
+                    predictor_params["batch_size"],
+                    device)
         self.predictor.eval()
         torch.save(self.predictor, predictor_params["save_path"])
 
@@ -44,6 +53,7 @@ class MNISTEvaluator(Evaluator):
             for encoded_context, _, _ in dataloader:
                 encoded_context = encoded_context.to(self.device)
                 actions = candidate.forward(encoded_context).squeeze()
+                actions = (actions > 0.5).float()
                 pred = self.predictor.decode(encoded_context, actions)
                 total_prob += torch.sum(pred).item()
 

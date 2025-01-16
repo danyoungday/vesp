@@ -2,11 +2,11 @@ import argparse
 from pathlib import Path
 import shutil
 
+from presp.evolution import Evolution
 import yaml
 
-from evaluator import MNISTEvaluator
-from prescriptor import DeepNNPrescriptorFactory
-from presp.evolution import Evolution
+from mnist.evaluator import MNISTEvaluator
+from mnist.prescriptor import DeepNNPrescriptorFactory
 
 
 def main():

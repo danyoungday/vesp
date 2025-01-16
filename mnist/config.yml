@@ -6,14 +6,16 @@ evolution_params:
   n_elites: 0
   mutation_rate: 0.8
   mutation_factor: 0.1
-  save_path: results/tiny
+  save_path: mnist/results/test
   seed_dir: null
 
 # Prescriptor-specific params
 prescriptor_params:
   model_params:
+    activation: tanh
     in_size: 128
     hidden_sizes: [16]
+    out_size: 1
   device: cuda:0
 
 # Evaluation params
@@ -21,7 +23,7 @@ eval_params:
   device: cuda:0
   batch_size: 1024
   predictor_params:
-    save_path: results/tiny/predictor.pt
+    save_path: mnist/results/test/predictor.pt
     epochs: 10
     batch_size: 32
     conv_params:
@@ -35,4 +37,7 @@ eval_params:
           kernel_size: 3
           stride: 2
     decoder_params:
-      hidden_sizes: [129, 16]
+      activation: relu
+      in_size: 129
+      hidden_sizes: [16]
+      out_size: 1
