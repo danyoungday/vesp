@@ -2,11 +2,11 @@ import argparse
 from pathlib import Path
 import shutil
 
+from presp.evolution import Evolution
 import yaml
 
-from evaluator import MNISTEvaluator
-from prescriptor import DeepNNPrescriptorFactory
-from presp.evolution import Evolution
+from mnist.evaluator import MNISTEvaluator
+from mnist.prescriptor import MNISTPrescriptorFactory
 
 
 def main():
@@ -31,7 +31,7 @@ def main():
             with open(save_path / "config.yml", "w", encoding="utf-8") as w:
                 yaml.dump(config, w)
 
-            prescriptor_factory = DeepNNPrescriptorFactory(**config["prescriptor_params"])
+            prescriptor_factory = MNISTPrescriptorFactory(**config["prescriptor_params"])
             evaluator = MNISTEvaluator(**config["eval_params"])
             evolution = Evolution(prescriptor_factory=prescriptor_factory,
                                   evaluator=evaluator,

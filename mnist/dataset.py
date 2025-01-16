@@ -13,7 +13,7 @@ class MNISTDataset(Dataset):
     """
     def __init__(self):
         transforms = v2.Compose([v2.ToImage(), v2.ToDtype(torch.float32, scale=True)])
-        self.dataset = torchvision.datasets.MNIST(root="./data", train=True, transform=transforms)
+        self.dataset = torchvision.datasets.MNIST(root="mnist/data", train=True, transform=transforms)
 
         self.context = self.dataset.data / 255.0
         self.actions = self.dataset.targets % 2

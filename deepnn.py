@@ -1,35 +1,33 @@
+"""
+Deep neural network prescriptor implementation.
+"""
 import copy
 from pathlib import Path
+from typing import Type
 
 from presp.prescriptor import Prescriptor, PrescriptorFactory
 import torch
+
+from models import FCN
 
 
 class DeepNNPrescriptor(Prescriptor):
     """
     Simple neural network implementation of a prescriptor modified to be deeper.
     """
-    def __init__(self, model_params: dict[str, int], device: str = "cpu"):
+    def __init__(self, model_params: dict, device: str = "cpu"):
         super().__init__()
         self.model_params = model_params
         self.device = device
 
-        hidden_sizes = model_params["hidden_sizes"]
-        layers = [torch.nn.Linear(model_params["in_size"], hidden_sizes[0])]
-
-        for i in range(1, len(hidden_sizes)):
-            layers.append(torch.nn.Tanh())
-            layers.append(torch.nn.Linear(hidden_sizes[i-1], hidden_sizes[i]))
-        
-        layers.append(torch.nn.Tanh())
-        layers.append(torch.nn.Linear(hidden_sizes[-1], 1))
-        layers.append(torch.nn.Sigmoid())
-        self.model = torch.nn.Sequential(*layers)
-
+        self.model = FCN(model_params)
         self.model.to(device)
+        self.model.eval()
 
     def forward(self, context: torch.Tensor) -> torch.Tensor:
-        return self.model(context)
+        with torch.no_grad():
+            output = self.model(context)
+        return output
 
     def save(self, path: Path):
         torch.save(self.model.state_dict(), path)
@@ -39,8 +37,8 @@ class DeepNNPrescriptorFactory(PrescriptorFactory):
     """
     Factory to construct DeepNNPrescriptors.
     """
-    def __init__(self, model_params: dict[str, int], device: str = "cpu"):
-        super().__init__(DeepNNPrescriptor)
+    def __init__(self, prescriptor_cls: Type[DeepNNPrescriptor], model_params: dict[str, int], device: str = "cpu"):
+        super().__init__(prescriptor_cls)
         self.model_params = model_params
         self.device = device
 
@@ -49,7 +47,7 @@ class DeepNNPrescriptorFactory(PrescriptorFactory):
         Orthogonally initializes a neural network.
         """
         candidate = self.prescriptor_cls(self.model_params, self.device)
-        for layer in candidate.model:
+        for layer in candidate.model.model.modules():
             if isinstance(layer, torch.nn.Linear):
                 torch.nn.init.orthogonal_(layer.weight)
                 layer.bias.data.fill_(0.01)
