@@ -5,19 +5,6 @@ import torchvision
 from torchvision.transforms import v2
 
 
-class CustomDS(Dataset):
-    def __init__(self, context, actions, outcomes):
-        self.context = context
-        self.actions = actions
-        self.outcomes = outcomes
-
-    def __len__(self):
-        return len(self.context)
-    
-    def __getitem__(self, idx):
-        return self.context[idx], self.actions[idx], self.outcomes[idx]
-
-
 class MNISTDataset(Dataset):
     """
     A synthetic dataset representing decision making based on MNIST images.
@@ -29,22 +16,44 @@ class MNISTDataset(Dataset):
         self.dataset = torchvision.datasets.MNIST(root="./data", train=True, transform=transforms)
 
         self.context = self.dataset.data / 255.0
-
         self.actions = self.dataset.targets % 2
         self.outcomes = torch.randint(0, 2, self.actions.shape)
         self.actions[~self.outcomes.bool()] = 1 - self.actions[~self.outcomes.bool()]
-        # pylint: disable=not-callable
-        self.outcomes = F.one_hot(self.outcomes, num_classes=2)
 
         self.actions = self.actions.float()
         self.outcomes = self.outcomes.float()
 
-
-    def get_encoded_ds(self, predictor, device):
+    @staticmethod
+    def encode_context(context, predictor, device):
         all_context = []
-        for c in self.context:
+        for c in context:
             all_context.append(predictor.encode(c.to(device).unsqueeze(0)).squeeze(0))
-        return CustomDS(torch.stack(all_context), self.actions, self.outcomes)
+        return torch.stack(all_context)
+
+    @classmethod
+    def get_encoded_ds(cls, predictor, device):
+        ds = cls()
+        ds.context = ds.encode_context(ds.context, predictor, device) 
+        return ds
+    
+    @classmethod
+    def get_encoded_eval_ds(cls, predictor, device):
+        ds = cls()
+        ds.context = ds.encode_context(ds.context, predictor, device)
+        eval_actions = ds.dataset.targets % 2
+        eval_outcomes = torch.ones_like(eval_actions)
+        # pylint: disable=not-callable
+        ds.actions = eval_actions.float()
+        ds.outcomes = eval_outcomes.float()
+        return ds
+    
+    @classmethod
+    def get_counterfactual_ds(cls, predictor, device):
+        ds = cls()
+        ds.context = ds.encode_context(ds.context, predictor, device)
+        ds.actions = 1- ds.actions
+        ds.outcomes = 1 - ds.outcomes
+        return ds
 
     def __len__(self):
         return len(self.context)

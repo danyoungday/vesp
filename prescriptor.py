@@ -22,14 +22,14 @@ class DeepNNPrescriptor(Prescriptor):
             layers.append(torch.nn.Linear(hidden_sizes[i-1], hidden_sizes[i]))
         
         layers.append(torch.nn.Tanh())
-        layers.append(torch.nn.Linear(hidden_sizes[-1], model_params["out_size"]))
-        layers.append(torch.nn.Softmax(dim=-1))
+        layers.append(torch.nn.Linear(hidden_sizes[-1], 1))
+        layers.append(torch.nn.Sigmoid())
         self.model = torch.nn.Sequential(*layers)
 
         self.model.to(device)
 
     def forward(self, context: torch.Tensor) -> torch.Tensor:
-        return torch.argmax(self.model(context), dim=1)
+        return self.model(context)
 
     def save(self, path: Path):
         torch.save(self.model.state_dict(), path)

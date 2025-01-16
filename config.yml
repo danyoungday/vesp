@@ -6,31 +6,33 @@ evolution_params:
   n_elites: 0
   mutation_rate: 0.8
   mutation_factor: 0.1
-  save_path: results/testmore
+  save_path: results/tiny
   seed_dir: null
 
 # Prescriptor-specific params
 prescriptor_params:
   model_params:
-    in_size: 3872
-    hidden_sizes: [128, 64]
-    out_size: 2
+    in_size: 128
+    hidden_sizes: [16]
   device: cuda:0
 
 # Evaluation params
 eval_params:
   device: cuda:0
-  conv_params:
-    conv_blocks:
-      - in_channels: 1
-        out_channels: 16
-        kernel_size: 3
-      - in_channels: 16
-        out_channels: 32
-        kernel_size: 3
-    # These params are just dummy until we modify them later
-    hidden_sizes: [3872, 128, 64]
-    out_size: 2
-  decoder_params:
-    hidden_sizes: [3873, 128, 64]
-    out_size: 2
+  batch_size: 1024
+  predictor_params:
+    save_path: results/tiny/predictor.pt
+    epochs: 10
+    batch_size: 32
+    conv_params:
+      conv_blocks:
+        - in_channels: 1
+          out_channels: 16
+          kernel_size: 5
+          stride: 2
+        - in_channels: 16
+          out_channels: 32
+          kernel_size: 3
+          stride: 2
+    decoder_params:
+      hidden_sizes: [129, 16]
